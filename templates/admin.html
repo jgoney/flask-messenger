@@ -1,0 +1,36 @@
+{% extends "main.html" %}
+
+{% block title %}Test Message App | Admin{% endblock %}
+
+{% block content %}
+
+    <div class="container">
+
+        <div class="row">
+            <div class="col-md-12">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>id</th>
+                            <th>Time/date</th>
+                            <th>Message</th>
+                            <th>Sender</th>
+                        </tr>
+
+                    </thead>
+                    <tbody>
+                    {% for row in messages %}
+                        <tr>
+                            <td>{{ row.id }}</td>
+                            <td>{{ row.dt }}</td>
+                            <td>{{ row.message }}</td>
+                            <td>{{ row.sender }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}

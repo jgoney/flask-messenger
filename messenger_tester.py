@@ -27,6 +27,16 @@ class MessengerBaseTestCase(unittest.TestCase):
         os.close(self.db_fd)
         os.unlink(messenger.app.config['DATABASE'])
 
+    # Helper functions for testing login/logout
+    def login(self, username, password):
+        return self.app.post('/login', data=dict(
+            username=username,
+            password=password
+        ), follow_redirects=True)
+
+    def logout(self):
+        return self.app.get('/logout', follow_redirects=True)
+
 
 class MessengerEmptyTestCase(MessengerBaseTestCase):
 
@@ -86,6 +96,62 @@ class MessengerSingleTestCase(MessengerBaseTestCase):
         rv = self.app.delete('/messages/api/1')
         self.assertEqual(rv.status_code, 200)
         self.assertIn('"result": true', rv.data)
+
+    def test_delete_wrong_id(self):
+        # Try to delete a single message with a non-int id
+        rv = self.app.delete('/messages/api/foo')
+        self.assertEqual(rv.status_code, 404)
+        self.assertIn('"error": "Not found"', rv.data)
+
+
+class MessengerMultipleTestCase(MessengerBaseTestCase):
+
+    def setUp(self):
+        super(MessengerMultipleTestCase, self).setUp()
+        with sqlite3.connect(messenger.app.config['DATABASE']) as conn:
+            c = conn.cursor()
+            for i in xrange(5):
+                cmd = "INSERT INTO messages VALUES (NULL, datetime('now'), ?, ?)"
+                m = 'message #%s' % (i,)
+                s = 'sender #%s' % (i,)
+                c.execute(cmd, (m, s))
+            conn.commit()
+
+    def test_delete_multiple(self):
+        # Delete multiple messages at once
+        rv = self.app.delete('/messages/api/1')
+        self.assertEqual(rv.status_code, 200)
+        self.assertIn('"result": true', rv.data)
+
+
+class MessengerMiscTestCase(MessengerBaseTestCase):
+
+    def test_login_logout(self):
+        # Test successful login
+        rv = self.login('admin', '123')
+        self.assertIn('Logout', rv.data)
+        self.assertEqual(rv.status_code, 200)
+
+        # Test successful logout
+        rv = self.logout()
+        self.assertIn('Login', rv.data)
+        self.assertEqual(rv.status_code, 200)
+
+        # Test wrong username
+        rv = self.login('adminx', '123')
+        self.assertIn('Invalid username and/or password', rv.data)
+        self.assertEqual(rv.status_code, 200)
+
+        # Test wrong password
+        rv = self.login('admin', '123x')
+        self.assertIn('Invalid username and/or password', rv.data)
+        self.assertEqual(rv.status_code, 200)
+
+    def test_about_page(self):
+        rv = self.app.get('/about')
+        self.assertIn('About page, nothing to see here.', rv.data)
+        self.assertEqual(rv.status_code, 200)
+
 
 if __name__ == '__main__':
     unittest.main()

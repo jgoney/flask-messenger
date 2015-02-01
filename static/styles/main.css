@@ -7,3 +7,8 @@ h1 {
     padding: 1rem;
     background-color: darkgray;
 }
+
+.error {
+    font-weight: bolder;
+    color: firebrick;
+}

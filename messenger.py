@@ -1,7 +1,7 @@
 import os
 import sqlite3
 
-from flask import Flask, abort, jsonify, make_response, redirect, render_template, request
+from flask import Flask, abort, jsonify, make_response, redirect, render_template, request, session, url_for
 
 import settings
 
@@ -25,6 +25,29 @@ def _get_message(id=None):
 
         return [{'id': r[0], 'dt': r[1], 'message': r[2], 'sender': r[3]} for r in rows]
 
+def _add_message(message, sender):
+    with sqlite3.connect(app.config['DATABASE']) as conn:
+        c = conn.cursor()
+        q = "INSERT INTO messages VALUES (NULL, datetime('now'),?,?)"
+        c.execute(q, (message, sender))
+        conn.commit()
+        return c.lastrowid
+
+def _delete_message(ids):
+    with sqlite3.connect(app.config['DATABASE']) as conn:
+        c = conn.cursor()
+        q = "DELETE FROM messages WHERE id=?"
+
+        # Try/catch in case 'ids' isn't an iterable
+        try:
+            for i in ids:
+                c.execute(q, (int(i),))
+        except TypeError:
+            c.execute(q, (int(ids),))
+
+        conn.commit()
+
+
 # Custom error handlers
 @app.errorhandler(400)
 def not_found(error):
@@ -34,16 +57,13 @@ def not_found(error):
 def not_found(error):
     return make_response(jsonify({'error': 'Not found'}), 404)
 
+
 # Standard routing
 @app.route('/', methods = ['GET', 'POST'])
 def home():
     if request.method == 'POST':
-        with sqlite3.connect(app.config['DATABASE']) as conn:
-            c = conn.cursor()
-            q = "INSERT INTO messages VALUES (NULL, datetime('now'),?,?)"
-            c.execute(q, (request.form['message'], request.form['username']))
-            conn.commit()
-            redirect('/')
+        _add_message(request.form['message'], request.form['username'])
+        redirect(url_for('home'))
 
     return render_template('index.html', messages=_get_message())
 
@@ -53,7 +73,34 @@ def about():
 
 @app.route('/admin', methods = ['GET', 'POST'])
 def admin():
-    return render_template('admin.html', messages=reversed(_get_message()))
+    if not 'logged_in' in session:
+        return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        _delete_message(request.form.keys())
+        redirect(url_for('admin'))
+
+    messages = _get_message()
+    messages.reverse()
+
+    return render_template('admin.html', messages=messages)
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    error = None
+    if request.method == 'POST':
+        if request.form['username'] != app.config['USERNAME'] or request.form['password'] != app.config['PASSWORD']:
+            error = 'Invalid username and/or password'
+        else:
+            session['logged_in'] = True
+            return redirect(url_for('admin'))
+    return render_template('login.html', error=error)
+
+@app.route('/logout')
+def logout():
+    session.pop('logged_in', None)
+    return redirect(url_for('home'))
+
 
 # RESTful routing
 @app.route('/messages/api', methods=['GET'])
@@ -70,21 +117,13 @@ def create_message():
     if not request.json or not 'message' in request.json or not 'sender' in request.json:
         abort(400)
 
-    with sqlite3.connect(app.config['DATABASE']) as conn:
-        c = conn.cursor()
-        q = "INSERT INTO messages VALUES (NULL, datetime('now'),?,?)"
-        c.execute(q, (request.json['message'], request.json['sender']))
-        conn.commit()
+    id = _add_message(request.json['message'], request.json['sender'])
 
-    return get_message_by_id(c.lastrowid), 201
+    return get_message_by_id(id), 201
 
 @app.route('/messages/api/<int:id>', methods=['DELETE'])
 def delete_message_by_id(id):
-    with sqlite3.connect(app.config['DATABASE']) as conn:
-        c = conn.cursor()
-        q = "DELETE FROM messages WHERE id=?"
-        c.execute(q, (id,))
-        conn.commit()
+    _delete_message(id)
     return jsonify({'result': True})
 
 

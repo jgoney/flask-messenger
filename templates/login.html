@@ -1,0 +1,30 @@
+{% extends "main.html" %}
+
+{% block title %}Test Message App | Login{% endblock %}
+
+{% block content %}
+
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4">
+                <h2>Please login</h2>
+
+                {% if error %}
+                <p class=error>Error: {{ error }}</p>
+                {% endif %}
+
+                <form action="{{ url_for('login') }}" method=post>
+                    <dl>
+                    <dt>Username:
+                    <dd><input type=text name=username>
+                    <dt>Password:
+                    <dd><input type=password name=password>
+                    <dd><input type=submit value=Login>
+                    </dl>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+{% endblock %}

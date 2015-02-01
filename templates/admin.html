@@ -8,27 +8,40 @@
 
         <div class="row">
             <div class="col-md-12">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>id</th>
-                            <th>Time/date</th>
-                            <th>Message</th>
-                            <th>Sender</th>
-                        </tr>
+            {% if messages %}
+                <form id="mainform" method="post">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>id</th>
+                                <th>Time/date</th>
+                                <th>Message</th>
+                                <th>Sender</th>
+                                <th>Delete?</th>
+                            </tr>
 
-                    </thead>
-                    <tbody>
-                    {% for row in messages %}
-                        <tr>
-                            <td>{{ row.id }}</td>
-                            <td>{{ row.dt }}</td>
-                            <td>{{ row.message }}</td>
-                            <td>{{ row.sender }}</td>
-                        </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                        {% for row in messages %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td>{{ row.dt }}</td>
+                                <td>{{ row.message }}</td>
+                                <td>{{ row.sender }}</td>
+                                <td><input type="checkbox" name="{{ row.id }}"></td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td><input type="submit" form="mainform"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </form>
+            {% else %}
+                <p>No messages found.</p>
+            {% endif %}
             </div>
         </div>
     </div>

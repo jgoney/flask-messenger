@@ -19,10 +19,14 @@
             <div class="col-md-8">
 
                 <h1>Messages</h1>
-                {% for m in messages %}
-                    <p>On {{ m.dt }}, {{ m.sender }} said:</p>
-                    <p>"{{ m.message }}"</p>
-                {% endfor %}
+                {% if messages %}
+                    {% for m in messages %}
+                        <p>"{{ m.message }}"</p>
+                        <p>{{ m.sender }} ({{ m.dt }})</p>
+                    {% endfor %}
+                {% else %}
+                    <p>No messages found.</p>
+                {% endif %}
             </div>
         </div>
     </div>

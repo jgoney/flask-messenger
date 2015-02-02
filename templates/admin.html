@@ -4,13 +4,13 @@
 
 {% block content %}
 
+    {# Main table and form layout #}
     <div class="container">
-
         <div class="row">
             <div class="col-md-12">
             {% if messages %}
                 <form id="mainform" method="post">
-                    <table class="table">
+                    <table class="table table-hover">
                         <thead>
                             <tr>
                                 <th>id</th>
@@ -19,7 +19,6 @@
                                 <th>Sender</th>
                                 <th>Delete?</th>
                             </tr>
-
                         </thead>
                         <tbody>
                         {% for row in messages %}
@@ -28,13 +27,16 @@
                                 <td>{{ row.dt }}</td>
                                 <td>{{ row.message }}</td>
                                 <td>{{ row.sender }}</td>
-                                <td><input type="checkbox" name="{{ row.id }}"></td>
+                                <td>
+                                    <label for="delete-{{ row.id }}" class="sr-only">Delete {{ row.message }} by {{ row.sender }}</label>
+                                    <input id="delete-{{ row.id }}" type="checkbox" name="{{ row.id }}">
+                                </td>
                             </tr>
                         {% endfor %}
                         </tbody>
                         <tfoot>
                             <tr>
-                                <td><input type="submit" form="mainform"></td>
+                                <td colspan="5"><button type="button" class="btn btn-default center-block" data-toggle="modal" data-target="#confirmation">Update</button></td>
                             </tr>
                         </tfoot>
                     </table>
@@ -42,6 +44,25 @@
             {% else %}
                 <p>No messages found.</p>
             {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {# Deletion confirmation modal defined here #}
+    <div class="modal fade" id="confirmation" tabindex="-1" role="dialog" aria-labelledby="confirmation" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true"></button>
+                    <h4 class="modal-title" id="myModalLabel">Are you sure?</h4>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you wish to delete these messages?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                    <input class="btn btn-default" type="submit" form="mainform" value="Delete">
+                </div>
             </div>
         </div>
     </div>

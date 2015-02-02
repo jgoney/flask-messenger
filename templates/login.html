@@ -7,20 +7,22 @@
     <div class="container">
         <div class="row">
             <div class="col-md-4">
-                <h2>Please login</h2>
+                <h2>Please login:</h2>
 
                 {% if error %}
-                <p class=error>Error: {{ error }}</p>
+                <p class="text-danger">Error: {{ error }}</p>
                 {% endif %}
 
-                <form action="{{ url_for('login') }}" method=post>
-                    <dl>
-                    <dt>Username:
-                    <dd><input type=text name=username>
-                    <dt>Password:
-                    <dd><input type=password name=password>
-                    <dd><input type=submit value=Login>
-                    </dl>
+                <form action="{{ url_for('login') }}" method="post">
+                    <div class="form-group">
+                        <label for="username">Username:</label>
+                        <input type="text" name="username" id="username" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password:</label>
+                        <input type="password" name="password" id="password" class="form-control" required>
+                    </div>
+                    <input class="btn btn-default" type="submit" value="Login">
                 </form>
             </div>
         </div>

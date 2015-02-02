@@ -8,17 +8,23 @@
 
         <div class="row">
             <div class="col-md-4">
-                <h1>Say something</h1>
+                <h2>Say something</h2>
                 <form id="mainform" method="post">
-                    <input name="username" placeholder="Username" required>
-                    <input name="message" placeholder="Enter a message" required>
-                    <input type="submit" value="Submit">
+                    <div class="form-group">
+                        <label for="username">Sender:</label>
+                        <input id="username" class="form-control" name="username" placeholder="Sender" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="message">Enter your message:</label>
+                        <input id="message" class="form-control" name="message" placeholder="Your message here" required>
+                    </div>
+                    <input class="btn btn-default" type="submit" value="Submit">
                 </form>
 
             </div>
             <div class="col-md-8">
 
-                <h1>Messages</h1>
+                <h2>Messages</h2>
                 {% if messages %}
                     {% for m in messages %}
                         <p>"{{ m.message }}"</p>

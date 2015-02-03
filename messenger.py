@@ -6,7 +6,7 @@ from flask import Flask, abort, jsonify, make_response, redirect, render_templat
 import settings
 
 app = Flask(__name__)
-app.config.from_object(settings.Config)
+app.config.from_object(settings)
 
 # Helper functions
 def _get_message(id=None):
@@ -77,7 +77,8 @@ def admin():
         return redirect(url_for('login'))
 
     if request.method == 'POST':
-        _delete_message(request.form.keys())
+        # This little hack is needed for testing due to how Python dictionary keys work
+        _delete_message([k[6:] for k in request.form.keys()])
         redirect(url_for('admin'))
 
     messages = _get_message()

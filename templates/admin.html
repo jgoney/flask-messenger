@@ -29,7 +29,7 @@
                                 <td>{{ row.sender }}</td>
                                 <td>
                                     <label for="delete-{{ row.id }}" class="sr-only">Delete {{ row.message }} by {{ row.sender }}</label>
-                                    <input id="delete-{{ row.id }}" type="checkbox" name="{{ row.id }}">
+                                    <input id="delete-{{ row.id }}" type="checkbox" name="delete{{ row.id }}">
                                 </td>
                             </tr>
                         {% endfor %}

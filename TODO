@@ -3,6 +3,10 @@ TODO:
  - CSRF
  - Auth for REST
  - JS enhancements
- - Double check testing
- - Comment/cleanup code
  - Push notifications?
+
+ - Update README
+ - Update requirements.txt
+
+ - Comment/cleanup code
+ - Double-check tests

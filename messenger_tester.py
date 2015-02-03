@@ -11,7 +11,7 @@ import settings
 class MessengerBaseTestCase(unittest.TestCase):
 
     def setUp(self):
-        messenger.app.config.from_object(settings.Config)
+        messenger.app.config.from_object(settings)
         self.db_fd, messenger.app.config['DATABASE'] = tempfile.mkstemp()
         messenger.app.config['TESTING'] = True
         self.app = messenger.app.test_client()
@@ -123,6 +123,28 @@ class MessengerMultipleTestCase(MessengerBaseTestCase):
         self.assertEqual(rv.status_code, 200)
         self.assertIn('"result": true', rv.data)
 
+    def test_delete_multiple_admin_page(self):
+        # Delete multiple messages at once through admin interface
+        with self.app as c:
+            with c.session_transaction() as session:
+                session['logged_in'] = True
+
+            # Assert that the setup messages are there
+            rv = c.get('/admin', follow_redirects=True)
+            self.assertIn('message #0', rv.data)
+            self.assertIn('message #1', rv.data)
+            self.assertEqual(rv.status_code, 200)
+
+            # Assert that after POST, the chosen messages are deleted
+            rv = c.post('/admin', data=dict(
+               delete1='on',
+               delete2='on'
+            ), follow_redirects=True)
+            self.assertNotIn('message #0', rv.data)
+            self.assertNotIn('message #1', rv.data)
+            self.assertEqual(rv.status_code, 200)
+
+
 
 class MessengerMiscTestCase(MessengerBaseTestCase):
 
@@ -150,6 +172,33 @@ class MessengerMiscTestCase(MessengerBaseTestCase):
     def test_about_page(self):
         rv = self.app.get('/about')
         self.assertIn('About page, nothing to see here.', rv.data)
+        self.assertEqual(rv.status_code, 200)
+
+    def test_home_page(self):
+        rv = self.app.get('/')
+        self.assertNotIn('test user', rv.data)
+        self.assertNotIn('test message', rv.data)
+
+        rv = self.app.post('/', data=dict(
+        username="test user",
+        message="test message"
+        ), follow_redirects=True)
+
+        self.assertIn('test user', rv.data)
+        self.assertIn('test message', rv.data)
+        self.assertEqual(rv.status_code, 200)
+
+    def test_admin_page_redirect(self):
+        rv = self.app.get('/admin', follow_redirects=True)
+
+        self.assertIn('Please login:', rv.data)
+        self.assertEqual(rv.status_code, 200)
+
+        with self.app as c:
+            with c.session_transaction() as session:
+                session['logged_in'] = True
+            rv = c.get('/admin', follow_redirects=True)
+        self.assertIn('No messages found.', rv.data)
         self.assertEqual(rv.status_code, 200)
 
 

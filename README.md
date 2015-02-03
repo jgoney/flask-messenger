@@ -17,6 +17,11 @@ Running it:
 ```
 python messenger.py
 ```
+Running the tests:
+------------------
+```
+python messenger_tester.py
+```
 Notes:
 --------
 

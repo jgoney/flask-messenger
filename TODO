@@ -1,12 +1,10 @@
 TODO:
 ----
+
+P0:
  - CSRF
- - Auth for REST
- - JS enhancements
- - Push notifications?
+ - Authentication for REST
 
- - Update README
- - Update requirements.txt
-
- - Comment/cleanup code
- - Double-check tests
+P1:
+ - Various JavaScript niceties
+ - Push notifications with websockets

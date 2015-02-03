@@ -11,13 +11,14 @@ import settings
 class MessengerBaseTestCase(unittest.TestCase):
 
     def setUp(self):
+        """Create a temporary database and create the needed table"""
         messenger.app.config.from_object(settings)
         self.db_fd, messenger.app.config['DATABASE'] = tempfile.mkstemp()
         messenger.app.config['TESTING'] = True
         self.app = messenger.app.test_client()
 
         with sqlite3.connect(messenger.app.config['DATABASE']) as conn:
-            sql_path = os.path.join(messenger.app.config['APP_ROOT'], 'db_init.sql')  # TODO: simplify this for production
+            sql_path = os.path.join(messenger.app.config['APP_ROOT'], 'db_init.sql')
             cmd = open(sql_path, 'r').read()
             c = conn.cursor()
             c.execute(cmd)
@@ -72,6 +73,7 @@ class MessengerEmptyTestCase(MessengerBaseTestCase):
 class MessengerSingleTestCase(MessengerBaseTestCase):
 
     def setUp(self):
+        """Add a single message to the database for testing"""
         super(MessengerSingleTestCase, self).setUp()
         with sqlite3.connect(messenger.app.config['DATABASE']) as conn:
             cmd = "INSERT INTO messages VALUES (NULL, datetime('now'), 'Test', 'jgoney')"
@@ -80,7 +82,7 @@ class MessengerSingleTestCase(MessengerBaseTestCase):
             conn.commit()
 
     def test_get_single(self):
-        # Fetch a single message
+        """Tests fetching a single message"""
         rv = self.app.get('/messages/api/1')
 
         # Check error code
@@ -92,21 +94,22 @@ class MessengerSingleTestCase(MessengerBaseTestCase):
         self.assertEqual('Test', resp['messages'][0]['message'])
 
     def test_delete_single(self):
-        # Delete a single message
+        """Tests deleting a single message"""
         rv = self.app.delete('/messages/api/1')
         self.assertEqual(rv.status_code, 200)
         self.assertIn('"result": true', rv.data)
 
     def test_delete_wrong_id(self):
-        # Try to delete a single message with a non-int id
+        """Tests deleting a single message with a non-int id"""
         rv = self.app.delete('/messages/api/foo')
         self.assertEqual(rv.status_code, 404)
-        self.assertIn('"error": "Not found"', rv.data)
+        self.assertIn('<title>404 Not Found</title>', rv.data)
 
 
 class MessengerMultipleTestCase(MessengerBaseTestCase):
 
     def setUp(self):
+        """Adds multiple messages to the database for testing"""
         super(MessengerMultipleTestCase, self).setUp()
         with sqlite3.connect(messenger.app.config['DATABASE']) as conn:
             c = conn.cursor()
@@ -118,13 +121,15 @@ class MessengerMultipleTestCase(MessengerBaseTestCase):
             conn.commit()
 
     def test_delete_multiple(self):
-        # Delete multiple messages at once
+        """Tests deleting multiple messages at once"""
         rv = self.app.delete('/messages/api/1')
         self.assertEqual(rv.status_code, 200)
         self.assertIn('"result": true', rv.data)
 
     def test_delete_multiple_admin_page(self):
-        # Delete multiple messages at once through admin interface
+        """Tests deleting multiple messages at once through admin interface"""
+
+        # Set the proper session variable so that login works
         with self.app as c:
             with c.session_transaction() as session:
                 session['logged_in'] = True
@@ -137,18 +142,19 @@ class MessengerMultipleTestCase(MessengerBaseTestCase):
 
             # Assert that after POST, the chosen messages are deleted
             rv = c.post('/admin', data=dict(
-               delete1='on',
-               delete2='on'
+                delete1='on',
+                delete2='on'
             ), follow_redirects=True)
             self.assertNotIn('message #0', rv.data)
             self.assertNotIn('message #1', rv.data)
             self.assertEqual(rv.status_code, 200)
 
 
-
 class MessengerMiscTestCase(MessengerBaseTestCase):
 
     def test_login_logout(self):
+        """Tests login/logout functionality"""
+
         # Test successful login
         rv = self.login('admin', '123')
         self.assertIn('Logout', rv.data)
@@ -170,25 +176,32 @@ class MessengerMiscTestCase(MessengerBaseTestCase):
         self.assertEqual(rv.status_code, 200)
 
     def test_about_page(self):
+        """Tests that about page renders"""
         rv = self.app.get('/about')
         self.assertIn('About page, nothing to see here.', rv.data)
         self.assertEqual(rv.status_code, 200)
 
     def test_home_page(self):
+        """Tests creating a message through home page interface"""
+
+        # Assert that message is not present
         rv = self.app.get('/')
         self.assertNotIn('test user', rv.data)
         self.assertNotIn('test message', rv.data)
 
+        # Add message
         rv = self.app.post('/', data=dict(
-        username="test user",
-        message="test message"
+            username="test user",
+            message="test message"
         ), follow_redirects=True)
 
+        # Assert that message has been added
         self.assertIn('test user', rv.data)
         self.assertIn('test message', rv.data)
         self.assertEqual(rv.status_code, 200)
 
     def test_admin_page_redirect(self):
+        """Tests that the admin page redirects work as intended"""
         rv = self.app.get('/admin', follow_redirects=True)
 
         self.assertIn('Please login:', rv.data)

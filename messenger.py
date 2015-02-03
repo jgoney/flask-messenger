@@ -1,12 +1,13 @@
 import os
 import sqlite3
 
-from flask import Flask, abort, jsonify, make_response, redirect, render_template, request, session, url_for
+from flask import Flask, jsonify, make_response, redirect, render_template, request, session, url_for
 
 import settings
 
 app = Flask(__name__)
 app.config.from_object(settings)
+
 
 # Helper functions
 def _get_message(id=None):
@@ -25,6 +26,7 @@ def _get_message(id=None):
 
         return [{'id': r[0], 'dt': r[1], 'message': r[2], 'sender': r[3]} for r in rows]
 
+
 def _add_message(message, sender):
     with sqlite3.connect(app.config['DATABASE']) as conn:
         c = conn.cursor()
@@ -32,6 +34,7 @@ def _add_message(message, sender):
         c.execute(q, (message, sender))
         conn.commit()
         return c.lastrowid
+
 
 def _delete_message(ids):
     with sqlite3.connect(app.config['DATABASE']) as conn:
@@ -48,18 +51,8 @@ def _delete_message(ids):
         conn.commit()
 
 
-# Custom error handlers
-@app.errorhandler(400)
-def not_found(error):
-    return make_response(jsonify({'error': 'Bad request'}), 400)
-
-@app.errorhandler(404)
-def not_found(error):
-    return make_response(jsonify({'error': 'Not found'}), 404)
-
-
-# Standard routing
-@app.route('/', methods = ['GET', 'POST'])
+# Standard routing (server-side rendered pages)
+@app.route('/', methods=['GET', 'POST'])
 def home():
     if request.method == 'POST':
         _add_message(request.form['message'], request.form['username'])
@@ -67,11 +60,13 @@ def home():
 
     return render_template('index.html', messages=_get_message())
 
+
 @app.route('/about')
 def about():
     return render_template('about.html')
 
-@app.route('/admin', methods = ['GET', 'POST'])
+
+@app.route('/admin', methods=['GET', 'POST'])
 def admin():
     if not 'logged_in' in session:
         return redirect(url_for('login'))
@@ -86,6 +81,7 @@ def admin():
 
     return render_template('admin.html', messages=messages)
 
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     error = None
@@ -97,30 +93,33 @@ def login():
             return redirect(url_for('admin'))
     return render_template('login.html', error=error)
 
+
 @app.route('/logout')
 def logout():
     session.pop('logged_in', None)
     return redirect(url_for('home'))
 
 
-# RESTful routing
+# RESTful routing (serves JSON to provide an external API)
 @app.route('/messages/api', methods=['GET'])
 @app.route('/messages/api/<int:id>', methods=['GET'])
 def get_message_by_id(id=None):
     messages = _get_message(id)
     if not messages:
-        abort(404)
+        return make_response(jsonify({'error': 'Not found'}), 404)
 
     return jsonify({'messages': messages})
+
 
 @app.route('/messages/api', methods=['POST'])
 def create_message():
     if not request.json or not 'message' in request.json or not 'sender' in request.json:
-        abort(400)
+        return make_response(jsonify({'error': 'Bad request'}), 400)
 
     id = _add_message(request.json['message'], request.json['sender'])
 
     return get_message_by_id(id), 201
+
 
 @app.route('/messages/api/<int:id>', methods=['DELETE'])
 def delete_message_by_id(id):
@@ -130,11 +129,13 @@ def delete_message_by_id(id):
 
 if __name__ == '__main__':
 
+    # Test whether the database exists; if not, create it and create the table
     if not os.path.exists(app.config['DATABASE']):
         try:
             conn = sqlite3.connect(app.config['DATABASE'])
-            # Give absolute path for testing environment
-            sql_path = os.path.join(app.config['APP_ROOT'], 'db_init.sql')  # TODO: simplify this for production
+
+            # Absolute path needed for testing environment
+            sql_path = os.path.join(app.config['APP_ROOT'], 'db_init.sql')
             cmd = open(sql_path, 'r').read()
             c = conn.cursor()
             c.execute(cmd)

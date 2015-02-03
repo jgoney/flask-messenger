@@ -20,7 +20,7 @@ python messenger.py
 Notes:
 --------
 
-For the time being, the REST API doesn't use authentication.
+For the time being, the REST API doesn't use authentication. Also, the POST views are not yet protected against CSRF attacks.
 
 Licensing:
 ----------

@@ -7,21 +7,33 @@ Installation:
 -------------
 
 1. Clone this repository.
-2. Install the pre-requisites. You can install them either globally or in [a virtualenv](https://virtualenv.pypa.io/en/latest/), as you prefer. To install via Pip:
+2. Install the pre-requisites. Using [a virtualenv](https://docs.python.org/3/library/venv.html) is preferred. To setup a virtualenv and install dependencies via Pip:
 
 ```
+python3 -m venv ./env
+. env/bin/activate
 pip install -r requirements.txt
 ```
+
 Running it:
 -----------
 ```
 python messenger.py
 ```
+
 Running the tests:
 ------------------
 ```
 python messenger_tester.py
 ```
+
+Running the tests with Coverage:
+------------------
+```
+coverage run --omit=env/*  messenger_tester.py
+coverage html
+```
+
 Notes:
 --------
 

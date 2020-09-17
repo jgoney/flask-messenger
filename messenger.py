@@ -142,10 +142,10 @@ if __name__ == '__main__':
             conn.commit()
             conn.close()
         except IOError:
-            print "Couldn't initialize the database, exiting..."
+            print("Couldn't initialize the database, exiting...")
             raise
         except sqlite3.OperationalError:
-            print "Couldn't execute the SQL, exiting..."
+            print("Couldn't execute the SQL, exiting...")
             raise
 
     app.run(host='0.0.0.0')

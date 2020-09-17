@@ -19,10 +19,11 @@ class MessengerBaseTestCase(unittest.TestCase):
 
         with sqlite3.connect(messenger.app.config['DATABASE']) as conn:
             sql_path = os.path.join(messenger.app.config['APP_ROOT'], 'db_init.sql')
-            cmd = open(sql_path, 'r').read()
-            c = conn.cursor()
-            c.execute(cmd)
-            conn.commit()
+            with open(sql_path, 'r') as sql_file:
+                cmd = sql_file.read()
+                c = conn.cursor()
+                c.execute(cmd)
+                conn.commit()
 
     def tearDown(self):
         os.close(self.db_fd)
@@ -45,7 +46,7 @@ class MessengerEmptyTestCase(MessengerBaseTestCase):
         """A GET on an empty database should return 404 Not found"""
         rv = self.app.get('/messages/api')
         self.assertEqual(rv.status_code, 404)
-        self.assertIn('"error": "Not found"', rv.data)
+        self.assertIn(b'"error": "Not found"', rv.data)
 
     def test_post_empty_db(self):
         """POST a message to an empty database"""
@@ -56,7 +57,7 @@ class MessengerEmptyTestCase(MessengerBaseTestCase):
         self.assertEqual(rv.status_code, 201)
 
         # Decode JSON response and store object id
-        resp = json.loads(rv.data)
+        resp = rv.get_json()
 
         self.assertEqual('jgoney', resp['messages'][0]['sender'])
         self.assertEqual('Test', resp['messages'][0]['message'])
@@ -88,7 +89,7 @@ class MessengerSingleTestCase(MessengerBaseTestCase):
         # Check error code
         self.assertEqual(rv.status_code, 200)
 
-        resp = json.loads(rv.data)
+        resp = rv.get_json()
 
         self.assertEqual('jgoney', resp['messages'][0]['sender'])
         self.assertEqual('Test', resp['messages'][0]['message'])
@@ -97,13 +98,15 @@ class MessengerSingleTestCase(MessengerBaseTestCase):
         """Tests deleting a single message"""
         rv = self.app.delete('/messages/api/1')
         self.assertEqual(rv.status_code, 200)
-        self.assertIn('"result": true', rv.data)
+
+        resp = rv.get_json()
+        self.assertTrue(resp['result'])
 
     def test_delete_wrong_id(self):
         """Tests deleting a single message with a non-int id"""
         rv = self.app.delete('/messages/api/foo')
         self.assertEqual(rv.status_code, 404)
-        self.assertIn('<title>404 Not Found</title>', rv.data)
+        self.assertIn(b'<title>404 Not Found</title>', rv.data)
 
 
 class MessengerMultipleTestCase(MessengerBaseTestCase):
@@ -113,7 +116,7 @@ class MessengerMultipleTestCase(MessengerBaseTestCase):
         super(MessengerMultipleTestCase, self).setUp()
         with sqlite3.connect(messenger.app.config['DATABASE']) as conn:
             c = conn.cursor()
-            for i in xrange(5):
+            for i in range(5):
                 cmd = "INSERT INTO messages VALUES (NULL, datetime('now'), ?, ?)"
                 m = 'message #%s' % (i,)
                 s = 'sender #%s' % (i,)
@@ -124,7 +127,7 @@ class MessengerMultipleTestCase(MessengerBaseTestCase):
         """Tests deleting multiple messages at once"""
         rv = self.app.delete('/messages/api/1')
         self.assertEqual(rv.status_code, 200)
-        self.assertIn('"result": true', rv.data)
+        self.assertIn(b'"result": true', rv.data)
 
     def test_delete_multiple_admin_page(self):
         """Tests deleting multiple messages at once through admin interface"""
@@ -136,8 +139,8 @@ class MessengerMultipleTestCase(MessengerBaseTestCase):
 
             # Assert that the setup messages are there
             rv = c.get('/admin', follow_redirects=True)
-            self.assertIn('message #0', rv.data)
-            self.assertIn('message #1', rv.data)
+            self.assertIn(b'message #0', rv.data)
+            self.assertIn(b'message #1', rv.data)
             self.assertEqual(rv.status_code, 200)
 
             # Assert that after POST, the chosen messages are deleted
@@ -145,8 +148,8 @@ class MessengerMultipleTestCase(MessengerBaseTestCase):
                 delete1='on',
                 delete2='on'
             ), follow_redirects=True)
-            self.assertNotIn('message #0', rv.data)
-            self.assertNotIn('message #1', rv.data)
+            self.assertNotIn(b'message #0', rv.data)
+            self.assertNotIn(b'message #1', rv.data)
             self.assertEqual(rv.status_code, 200)
 
 
@@ -157,28 +160,28 @@ class MessengerMiscTestCase(MessengerBaseTestCase):
 
         # Test successful login
         rv = self.login('admin', '123')
-        self.assertIn('Logout', rv.data)
+        self.assertIn(b'Logout', rv.data)
         self.assertEqual(rv.status_code, 200)
 
         # Test successful logout
         rv = self.logout()
-        self.assertIn('Login', rv.data)
+        self.assertIn(b'Login', rv.data)
         self.assertEqual(rv.status_code, 200)
 
         # Test wrong username
         rv = self.login('adminx', '123')
-        self.assertIn('Invalid username and/or password', rv.data)
+        self.assertIn(b'Invalid username and/or password', rv.data)
         self.assertEqual(rv.status_code, 200)
 
         # Test wrong password
         rv = self.login('admin', '123x')
-        self.assertIn('Invalid username and/or password', rv.data)
+        self.assertIn(b'Invalid username and/or password', rv.data)
         self.assertEqual(rv.status_code, 200)
 
     def test_about_page(self):
         """Tests that about page renders"""
         rv = self.app.get('/about')
-        self.assertIn('About page, nothing to see here.', rv.data)
+        self.assertIn(b'About page, nothing to see here.', rv.data)
         self.assertEqual(rv.status_code, 200)
 
     def test_home_page(self):
@@ -186,8 +189,8 @@ class MessengerMiscTestCase(MessengerBaseTestCase):
 
         # Assert that message is not present
         rv = self.app.get('/')
-        self.assertNotIn('test user', rv.data)
-        self.assertNotIn('test message', rv.data)
+        self.assertNotIn(b'test user', rv.data)
+        self.assertNotIn(b'test message', rv.data)
 
         # Add message
         rv = self.app.post('/', data=dict(
@@ -196,24 +199,23 @@ class MessengerMiscTestCase(MessengerBaseTestCase):
         ), follow_redirects=True)
 
         # Assert that message has been added
-        self.assertIn('test user', rv.data)
-        self.assertIn('test message', rv.data)
+        self.assertIn(b'test user', rv.data)
+        self.assertIn(b'test message', rv.data)
         self.assertEqual(rv.status_code, 200)
 
     def test_admin_page_redirect(self):
         """Tests that the admin page redirects work as intended"""
         rv = self.app.get('/admin', follow_redirects=True)
 
-        self.assertIn('Please login:', rv.data)
+        self.assertIn(b'Please login:', rv.data)
         self.assertEqual(rv.status_code, 200)
 
         with self.app as c:
             with c.session_transaction() as session:
                 session['logged_in'] = True
             rv = c.get('/admin', follow_redirects=True)
-        self.assertIn('No messages found.', rv.data)
+        self.assertIn(b'No messages found.', rv.data)
         self.assertEqual(rv.status_code, 200)
-
 
 if __name__ == '__main__':
     unittest.main()

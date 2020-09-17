@@ -1,4 +1,4 @@
-from settings_common import *
+from .settings_common import *
 
 # Conditionally import additional settings depending on whether we're developing or in production
 
@@ -6,6 +6,6 @@ from settings_common import *
 production = False
 
 if production:
-    from settings_prod import *
+    from .settings_prod import *
 else:
-    from settings_dev import *
+    from .settings_dev import *

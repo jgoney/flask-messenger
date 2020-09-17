@@ -3,6 +3,8 @@ flask-messenger
 
 This is a simple CRUD-type messaging app built with Flask (with Bootstrap for styling and responsiveness). It also features a REST API.
 
+flask-messenger works with Python 3.x, which you really should be using at this point. It may still work with Python 2.x, but caveat emptor.
+
 Installation:
 -------------
 

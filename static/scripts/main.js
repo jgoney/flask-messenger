@@ -1,4 +1,4 @@
-$(document).ready(function() {
+$(document).ready(() => {
 
     // Attach '.active' to current page's link in navbar
     $("ul.nav li").each(function(i, e) {
